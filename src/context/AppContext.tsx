@@ -72,6 +72,10 @@ interface AppContextType {
   activePage: string;
   setActivePage: (page: string) => void;
 
+  // OAuth Toast Banner
+  oauthSuccessBanner: string | null;
+  setOauthSuccessBanner: (msg: string | null) => void;
+
   // Scheduling draft state
   draftScheduleDate: string;
   draftScheduleTime: string;
@@ -152,7 +156,7 @@ const initialApiConfigs: ApiCredentialConfig[] = [
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(initialUsers[1]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [usersList, setUsersList] = useState<User[]>(initialUsers);
   const [channels, setChannels] = useState<SocialChannel[]>(initialChannels);
   const [posts, setPosts] = useState<PostContent[]>(initialPosts);
@@ -160,7 +164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [serverNodes] = useState<ServerNode[]>([]);
   const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
-  const [activePage, setActivePage] = useState<string>('planning');
+  const [activePage, setActivePage] = useState<string>('landing');
   const [draftScheduleDate, setDraftScheduleDate] = useState<string>(() => {
     return new Date().toISOString().split('T')[0];
   });
@@ -178,31 +182,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     currency: 'USD',
   });
 
+  const [oauthSuccessBanner, setOauthSuccessBanner] = useState<string | null>(null);
+
   useEffect(() => {
     async function checkOAuth() {
-      if (currentUser) {
-        const resultChannel = await handleOAuthCallback(currentUser.id);
-        if (resultChannel) {
-          const formattedChan: SocialChannel = {
-            id: resultChannel.id,
-            platform: resultChannel.platform,
-            handle: resultChannel.handle,
-            displayName: resultChannel.accountName,
-            avatar: resultChannel.avatar,
-            followers: resultChannel.followers,
-            status: resultChannel.status || 'active',
-            connectedAt: new Date().toISOString().split('T')[0],
-            tokenExpiresAt: resultChannel.tokenExpiresAt || '2027-08-18',
-            ipRegion: resultChannel.nodeRegion,
-            accountType: 'creator',
-          };
-          setChannels((prev) => [formattedChan, ...prev]);
-          setActivePage('channels');
-        }
+      const targetUserId = currentUser?.id || 'usr_creator1';
+      const resultChannel = await handleOAuthCallback(targetUserId);
+      if (resultChannel) {
+        const formattedChan: SocialChannel = {
+          id: resultChannel.id,
+          platform: resultChannel.platform,
+          handle: resultChannel.handle,
+          displayName: resultChannel.accountName,
+          avatar: resultChannel.avatar,
+          followers: resultChannel.followers,
+          status: resultChannel.status || 'active',
+          connectedAt: new Date().toISOString().split('T')[0],
+          tokenExpiresAt: resultChannel.tokenExpiresAt || '2027-08-18',
+          ipRegion: resultChannel.nodeRegion,
+          accountType: 'creator',
+        };
+        setChannels((prev) => {
+          if (prev.some((c) => c.handle === formattedChan.handle && c.platform === formattedChan.platform)) {
+            return prev;
+          }
+          return [formattedChan, ...prev];
+        });
+        setOauthSuccessBanner(
+          `✅ 账号 ${formattedChan.handle} 已通过 TikTok Sandbox 官方授权成功连通绑定！`
+        );
+        setActivePage('channels');
       }
     }
     checkOAuth();
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -626,6 +639,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markInboxRead,
         activePage,
         setActivePage,
+        oauthSuccessBanner,
+        setOauthSuccessBanner,
         draftScheduleDate,
         draftScheduleTime,
         setDraftSchedule,

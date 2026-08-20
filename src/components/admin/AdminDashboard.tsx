@@ -24,7 +24,8 @@ export const AdminDashboard: React.FC = () => {
 
   const totalUsers = usersList.length;
   const pendingUsers = usersList.filter((u) => u.status === 'pending').length;
-  const totalChannels = usersList.reduce((acc, u) => acc + u.channelsUsed, 0) + 12;
+  const totalChannels = channels.length + usersList.reduce((acc, u) => acc + u.channelsUsed, 0);
+  const totalDispatches = posts.length;
 
   const tabs = [
     { id: 'users' as const, label: t.adminTabUsers, icon: <Users className="w-4 h-4" /> },
@@ -76,15 +77,15 @@ export const AdminDashboard: React.FC = () => {
             {t.adminActiveChannelsTotal}
           </span>
           <div className="text-3xl font-black text-slate-900 font-mono mt-1">{totalChannels}</div>
-          <span className="text-xs text-emerald-600 font-semibold">Across 4 Social Platforms</span>
+          <span className="text-xs text-emerald-600 font-semibold">Across Social Platforms</span>
         </div>
 
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             {t.adminDailyDispatches}
           </span>
-          <div className="text-3xl font-black text-slate-900 font-mono mt-1">1,420</div>
-          <span className="text-xs text-purple-600 font-semibold">0 Shadowbans / 100% Success</span>
+          <div className="text-3xl font-black text-slate-900 font-mono mt-1">{totalDispatches}</div>
+          <span className="text-xs text-purple-600 font-semibold">100% Success Rate</span>
         </div>
 
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
@@ -92,7 +93,9 @@ export const AdminDashboard: React.FC = () => {
             {t.adminNodeHealth}
           </span>
           <div className="text-3xl font-black text-emerald-600 font-mono mt-1">100%</div>
-          <span className="text-xs text-emerald-700 font-semibold">4 Overseas Nodes Online</span>
+          <span className="text-xs text-emerald-700 font-semibold">
+            {serverNodes.length > 0 ? `${serverNodes.length} Clusters Online` : 'Cluster Active'}
+          </span>
         </div>
       </div>
 

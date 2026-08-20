@@ -9,10 +9,10 @@ export const FaqSection: React.FC = () => {
 
   const faqs = [
     {
-      q: language === 'zh' ? 'Yunina 如何解决国内创作者发布短视频时的 IP 污染与限流问题？' : 'How does Yunina prevent IP pollution and shadowbans for cross-border creators?',
+      q: language === 'zh' ? 'Yunina 如何为创作者提供稳定的短视频分发体验？' : 'How does Yunina ensure reliable short video dispatch for creators?',
       a: language === 'zh'
-        ? 'Yunina 拥有部署在美西（硅谷）、美东（弗吉尼亚）、欧洲（法兰克福）等地的原生纯净住宅级服务器直发集群。创作者在工作台上传视频后，系统直接通过海外固定原生 IP 调用 TikTok、YouTube、Meta 官方 API 发布，杜绝了由于梯子跳 IP、公共代理节点黑名单导致的 0 播放和限流封号问题。'
-        : 'Yunina utilizes dedicated residential and direct carrier-grade cloud dispatch nodes deployed in Silicon Valley, Virginia, Frankfurt, and Tokyo. Your videos are queued and dispatched natively through clean overseas IPs via official APIs, completely avoiding the IP pollution and shadowban issues caused by shared VPNs.',
+        ? 'Yunina 拥有部署在美西（硅谷）、美东（弗吉尼亚）、欧洲（法兰克福）等地的分布式高可用调度节点。创作者在工作台上传视频后，系统直接调用 TikTok、YouTube、Meta 官方 API 进行精准定时排期与分发发布，告别手动操作的不稳定性。'
+        : 'Yunina utilizes dedicated direct carrier-grade cloud dispatch nodes deployed in Silicon Valley, Virginia, Frankfurt, and Tokyo. Your videos are queued and dispatched through official APIs.',
     },
     {
       q: language === 'zh' ? '系统是否完全符合 TikTok Content Posting API 及 Meta 官方审核规范？' : 'Is Yunina fully compliant with official TikTok and Meta Developer API audit policies?',
@@ -23,8 +23,8 @@ export const FaqSection: React.FC = () => {
     {
       q: language === 'zh' ? '什么是按账号席位（Per-Channel）灵活计费？' : 'How does the Per-Channel seat pricing work?',
       a: language === 'zh'
-        ? '我们的定价为灵活的每账号 $7.00 USD/月（年付享 20% 折扣后低至 $5.60 USD/月）。每个账号席位可绑定一个 TikTok、YouTube Shorts 或 Facebook 页面，享有该账号的无限次短视频定时排期、海外住宅 IP 直发及统一互动功能。您可以随时根据矩阵规模增减席位。'
-        : 'Pricing is billed at $7.00 USD / channel / month (or $5.60 USD / channel / month on annual plans with a 20% discount). Each channel seat includes unlimited video scheduling, dedicated overseas IP dispatch, mobile preview simulation, and unified inbox management.',
+        ? '我们的定价为灵活的每账号 $7.00 USD/月（年付享 20% 折扣后低至 $5.60 USD/月）。每个账号席位可绑定一个 TikTok、YouTube Shorts 或 Facebook 页面，享有该账号的无限次短视频定时排期与统一互动功能。您可以随时根据矩阵规模增减席位。'
+        : 'Pricing is billed at $7.00 USD / channel / month (or $5.60 USD / channel / month on annual plans with a 20% discount). Each channel seat includes unlimited video scheduling, mobile preview simulation, and unified inbox management.',
     },
     {
       q: language === 'zh' ? '支持哪些视频格式和分辨率要求？' : 'What video specifications and formats are supported?',

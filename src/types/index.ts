@@ -31,7 +31,7 @@ export interface SocialChannel {
   status: 'active' | 'expired' | 'connecting';
   connectedAt: string;
   tokenExpiresAt: string;
-  ipRegion: string; // e.g. "US-West (Silicon Valley Clean IP)"
+  ipRegion: string; // e.g. "US-West (Silicon Valley)"
   accountType: 'business' | 'creator' | 'personal';
 }
 

@@ -73,8 +73,17 @@ export const ComposeEditor: React.FC = () => {
   const [autoPublish, setAutoPublish] = useState(true);
   const [useUrlShortener, setUseUrlShortener] = useState(false);
 
-  // Dynamic Date & Time system
-  const [scheduleDate, setScheduleDate] = useState<string>(() => draftScheduleDate || '2026-08-19');
+  // Dynamic Real Date & Time system
+  const getFormatYMD = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const todayStr = getFormatYMD(new Date());
+
+  const [scheduleDate, setScheduleDate] = useState<string>(() => draftScheduleDate || todayStr);
   const [scheduleTime, setScheduleTime] = useState<string>(() => draftScheduleTime || '11:00');
 
   useEffect(() => {
@@ -82,13 +91,37 @@ export const ComposeEditor: React.FC = () => {
     if (draftScheduleTime) setScheduleTime(draftScheduleTime);
   }, [draftScheduleDate, draftScheduleTime]);
 
-  const quickDates = [
-    { label: language === 'zh' ? '今天 (8/19)' : 'Today (8/19)', date: '2026-08-19' },
-    { label: language === 'zh' ? '明天 (8/20)' : 'Tomorrow (8/20)', date: '2026-08-20' },
-    { label: language === 'zh' ? '后天 (8/21)' : 'Day After (8/21)', date: '2026-08-21' },
-    { label: language === 'zh' ? '周六 (8/22)' : 'Sat (8/22)', date: '2026-08-22' },
-    { label: language === 'zh' ? '周日 (8/23)' : 'Sun (8/23)', date: '2026-08-23' },
-  ];
+  const generateQuickDates = () => {
+    const list = [];
+    const now = new Date();
+    const dayNamesZh = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      const dateVal = getFormatYMD(d);
+      const m = d.getMonth() + 1;
+      const dayNum = d.getDate();
+
+      let labelStr = '';
+      if (i === 0) {
+        labelStr = language === 'zh' ? `今天 (${m}/${dayNum})` : `Today (${m}/${dayNum})`;
+      } else if (i === 1) {
+        labelStr = language === 'zh' ? `明天 (${m}/${dayNum})` : `Tomorrow (${m}/${dayNum})`;
+      } else if (i === 2) {
+        labelStr = language === 'zh' ? `后天 (${m}/${dayNum})` : `Day After (${m}/${dayNum})`;
+      } else {
+        const dayName = language === 'zh' ? dayNamesZh[d.getDay()] : dayNamesEn[d.getDay()];
+        labelStr = `${dayName} (${m}/${dayNum})`;
+      }
+
+      list.push({ label: labelStr, date: dateVal });
+    }
+    return list;
+  };
+
+  const quickDates = generateQuickDates();
 
   const quickTimes = [
     { label: language === 'zh' ? '09:00 早高峰' : '09:00 Morning', time: '09:00' },
@@ -325,14 +358,14 @@ export const ComposeEditor: React.FC = () => {
                 ) : (
                   <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center space-y-2">
                     <p className="text-xs text-slate-500">
-                      {language === 'zh' ? '暂未绑定真实社交矩阵账号' : 'No real channels connected yet.'}
+                      {language === 'zh' ? '暂未绑定社交矩阵账号' : 'No channels connected yet.'}
                     </p>
                     <button
                       type="button"
                       onClick={() => setActivePage('channels')}
                       className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all cursor-pointer"
                     >
-                      + {language === 'zh' ? '点击连接真实账号' : 'Connect Real Account'}
+                      + {language === 'zh' ? '点击连接账号' : 'Connect Account'}
                     </button>
                   </div>
                 )}

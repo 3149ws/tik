@@ -88,20 +88,20 @@ export const ApiDocs: React.FC = () => {
         </p>
       </div>
 
-      {/* Overseas Clean IP Architecture Section */}
+      {/* High Performance Dispatch Architecture Section */}
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl">
         <div className="flex items-center gap-2 text-indigo-400">
           <Globe2 className="w-5 h-5" />
           <h2 className="text-base font-bold text-white">
             {language === 'zh'
-              ? '海外独立纯净 IP 直发技术白皮书概要'
-              : 'Dedicated Clean IP Node Technical Architecture'}
+              ? '高可用分布式 API 调度技术架构'
+              : 'High Availability API Dispatch Architecture'}
           </h2>
         </div>
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
           {language === 'zh'
-            ? '传统多账号分发常因公用代理网络导致 IP 污染和关联限流。Yunina 将每个经过授权的频道与当地运营商（如 AT&T, Deutsche Telekom, Singtel）住宅纯净节点 1:1 独立绑定，发帖请求全部通过本地网关直达，保障账号资产的长期健康稳定。'
-            : 'Traditional matrix distribution often suffers from blacklisted shared proxies. Yunina binds each authorized channel seat 1:1 to dedicated local residential nodes (AT&T, Deutsche Telekom, Singtel), ensuring long-term channel health.'}
+            ? 'Yunina 将每个经过授权的频道与高可用云端调度节点 1:1 独立对接，发帖请求通过官方 API 接口直达平台服务器，保障账号排期发布的即时性与稳定性。'
+            : 'Yunina pairs each authorized channel seat with dedicated cloud dispatch nodes, directing scheduling requests straight to official API endpoints for high reliability.'}
         </p>
       </div>
     </div>

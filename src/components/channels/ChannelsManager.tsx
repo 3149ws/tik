@@ -3,6 +3,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { useApp } from '../../context/AppContext';
 import { PlatformType } from '../../types';
 import { AddChannelModal } from './AddChannelModal';
+import { redirectToOAuth } from '../../services/oauthService';
 import {
   ShieldCheck,
   Globe2,
@@ -13,11 +14,21 @@ import {
   Plus,
   Radio,
   Sparkles,
+  X,
+  Zap,
 } from 'lucide-react';
 
 export const ChannelsManager: React.FC = () => {
   const { t, language } = useLanguage();
-  const { channels, removeChannel, testChannelDispatch, currentUser, setActivePage } = useApp();
+  const {
+    channels,
+    removeChannel,
+    testChannelDispatch,
+    currentUser,
+    setActivePage,
+    oauthSuccessBanner,
+    setOauthSuccessBanner,
+  } = useApp();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
@@ -28,6 +39,11 @@ export const ChannelsManager: React.FC = () => {
   const quota = currentUser?.channelsQuota || 5;
   const used = channels.length;
   const isQuotaFull = used >= quota;
+
+  const handleDirectConnect = async (platform: 'tiktok' | 'youtube' | 'facebook') => {
+    const userId = currentUser?.id || 'usr_creator1';
+    await redirectToOAuth(platform, userId);
+  };
 
   const handleTest = async (id: string) => {
     setTestingId(id);
@@ -66,9 +82,25 @@ export const ChannelsManager: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* OAuth Success Banner Toast */}
+      {oauthSuccessBanner && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <span>{oauthSuccessBanner}</span>
+          </div>
+          <button
+            onClick={() => setOauthSuccessBanner(null)}
+            className="p-1 hover:bg-emerald-100 rounded-lg text-emerald-700 transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             {t.channelsTitle}
@@ -88,6 +120,61 @@ export const ChannelsManager: React.FC = () => {
           <Plus className="w-4 h-4" />
           <span>{t.channelsAddButton}</span>
         </button>
+      </div>
+
+      {/* Direct OAuth Redirect Quick Bar */}
+      <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl border border-indigo-900/50 shadow-md">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-400/30">
+                <Zap className="w-4 h-4" />
+              </span>
+              <h2 className="text-sm sm:text-base font-extrabold">
+                {language === 'zh'
+                  ? 'TikTok 官方 Sandbox 授权 302 连通通道'
+                  : 'TikTok Official Sandbox 302 Direct Connect'}
+              </h2>
+            </div>
+            <p className="text-xs text-slate-300">
+              {language === 'zh'
+                ? '点击直接跳转 TikTok 官方授权域，无需弹窗或手动输入凭证。完成授权后将自动重定向回控制台并生成 @Sandbox_Test 绑定。'
+                : 'Clicking redirects directly to TikTok Sandbox OAuth. Auto binds @Sandbox_Test on callback return.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={() => handleDirectConnect('tiktok')}
+              className="px-4 py-2.5 bg-black hover:bg-slate-950 text-white border border-slate-700 rounded-xl text-xs font-bold shadow-xs hover:scale-[1.02] transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.86.12V9.4a6.33 6.33 0 0 0-6.61 6.33 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.35-6.34V8.65a8.28 8.28 0 0 0 4.17 1.48V6.69z" />
+              </svg>
+              <span>{language === 'zh' ? 'Connect TikTok' : 'Connect TikTok'}</span>
+            </button>
+
+            <button
+              onClick={() => handleDirectConnect('youtube')}
+              className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-xs hover:scale-[1.02] transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+              </svg>
+              <span>Connect YouTube</span>
+            </button>
+
+            <button
+              onClick={() => handleDirectConnect('facebook')}
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs hover:scale-[1.02] transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+              </svg>
+              <span>Connect Meta</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Quota Overview Card */}
@@ -210,12 +297,12 @@ export const ChannelsManager: React.FC = () => {
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-900">
-              {language === 'zh' ? '暂无连接的真实矩阵账号' : 'No Connected Social Channels'}
+              {language === 'zh' ? '暂无连接的矩阵账号' : 'No Connected Social Channels'}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md mx-auto">
               {language === 'zh'
-                ? '点击下方的按钮，通过 TikTok、YouTube Shorts 或 Facebook OAuth 官方授权绑定您的真实社媒账号。'
-                : 'Click the button below to authorize and connect your real TikTok, YouTube Shorts, or Facebook accounts via official OAuth.'}
+                ? '点击下方的按钮，通过 TikTok、YouTube Shorts 或 Facebook OAuth 官方授权绑定您的社媒账号。'
+                : 'Click the button below to authorize and connect your TikTok, YouTube Shorts, or Facebook accounts via official OAuth.'}
             </p>
           </div>
           <button

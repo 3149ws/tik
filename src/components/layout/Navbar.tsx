@@ -347,8 +347,8 @@ export const DashboardNav: React.FC = () => {
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span className="font-medium">
                 {language === 'zh'
-                  ? '直发 IP 状态: 纯净原生住宅'
-                  : 'Dispatch Node: Clean Residential'}
+                  ? '直发 API 节点: 运行正常'
+                  : 'Dispatch Node: Active'}
               </span>
             </div>
           </div>

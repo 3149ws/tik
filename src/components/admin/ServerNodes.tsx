@@ -15,14 +15,14 @@ export const ServerNodes: React.FC = () => {
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
             <h3 className="text-base font-bold text-white">
               {language === 'zh'
-                ? '全球海外纯净住宅 IP 直发集群'
-                : 'Global Overseas Clean Residential IP Dispatch Cluster'}
+                ? '全球分布式 API 调度服务集群'
+                : 'Global API Dispatch Cluster'}
             </h3>
           </div>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
             {language === 'zh'
-              ? '节点直接绑定当地运营商原生住宅网络，专线直连 TikTok / YouTube / Meta 数据中心，消除梯子跳 IP 限流风险。'
-              : 'Directly bound to local tier-1 residential carrier networks, eliminating proxy pollution.'}
+              ? '节点专线直连 TikTok / YouTube / Meta 数据中心，高效完成排期分发任务。'
+              : 'Directly connected to TikTok / YouTube / Meta data centers for reliable dispatching.'}
           </p>
         </div>
 

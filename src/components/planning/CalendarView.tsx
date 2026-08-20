@@ -28,10 +28,14 @@ export const CalendarView: React.FC = () => {
   const [viewMode, setViewMode] = useState<'week' | 'list'>('week');
   const [selectedPost, setSelectedPost] = useState<PostContent | null>(null);
 
-  // Dynamic Week State: initialize with Sunday of current week (2026-08-16)
+  // Dynamic Week State: initialize with Sunday of current real week
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
-    const d = new Date('2026-08-16T00:00:00');
-    return isNaN(d.getTime()) ? new Date() : d;
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 is Sunday
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+    return startOfWeek;
   });
 
   const handlePrevWeek = () => {
@@ -51,12 +55,24 @@ export const CalendarView: React.FC = () => {
   };
 
   const handleToday = () => {
-    const today = new Date('2026-08-19T00:00:00');
-    const dayOfWeek = today.getDay(); // 0 is Sunday
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - dayOfWeek);
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
     setCurrentWeekStart(startOfWeek);
   };
+
+  // Get real system today YYYY-MM-DD
+  const getTodayYMD = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const todayYMD = getTodayYMD();
 
   // Generate 7 days of the selected week
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -71,8 +87,8 @@ export const CalendarView: React.FC = () => {
     const dayNamesZh = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     const dayNamesEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-    // Check if this date is "today" in system (2026-08-19)
-    const isToday = fullDate === '2026-08-19';
+    // Check if this date is real system "today"
+    const isToday = fullDate === todayYMD;
 
     return {
       name: language === 'zh' ? dayNamesZh[d.getDay()] : dayNamesEn[d.getDay()],
@@ -193,7 +209,7 @@ export const CalendarView: React.FC = () => {
           {/* New Post Button */}
           <button
             onClick={() => {
-              setDraftSchedule('2026-08-19', '11:00');
+              setDraftSchedule(todayYMD, '11:00');
             }}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.02] cursor-pointer"
           >
@@ -240,7 +256,7 @@ export const CalendarView: React.FC = () => {
           </div>
 
           <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 hidden sm:inline-block">
-            {language === 'zh' ? '海外原生 Clean IP 直连' : 'Clean Residential Dispatch Ready'}
+            {language === 'zh' ? 'API 高速调度集群' : 'API Dispatch Ready'}
           </span>
         </div>
 
