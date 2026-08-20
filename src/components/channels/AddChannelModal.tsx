@@ -120,7 +120,17 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({ isOpen, onClos
     setIsRedirecting(true);
 
     const userId = currentUser?.id || 'usr_creator1';
-    await redirectToOAuth(selectedPlatform, userId);
+    const { url } = await getOAuthUrl(selectedPlatform, userId);
+    setRedirectedUrl(url);
+
+    try {
+      const win = window.open(url, '_blank');
+      if (!win || win.closed || typeof win.closed === 'undefined') {
+        await redirectToOAuth(selectedPlatform, userId);
+      }
+    } catch (e) {
+      await redirectToOAuth(selectedPlatform, userId);
+    }
   };
 
   const handleConfirmConnected = async () => {

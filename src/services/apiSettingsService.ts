@@ -37,9 +37,19 @@ export function saveToLocalStorageImmediately(data: Partial<SystemApiConfig>): S
     console.warn('Failed to parse existing config from localStorage', e);
   }
 
+  // Clean and trim string data
+  const cleanedData: Partial<SystemApiConfig> = {};
+  if (data.tiktok_client_key !== undefined) cleanedData.tiktok_client_key = data.tiktok_client_key.trim();
+  if (data.tiktok_client_secret !== undefined) cleanedData.tiktok_client_secret = data.tiktok_client_secret.trim();
+  if (data.tiktok_env !== undefined) cleanedData.tiktok_env = data.tiktok_env;
+  if (data.meta_app_id !== undefined) cleanedData.meta_app_id = data.meta_app_id.trim();
+  if (data.meta_app_secret !== undefined) cleanedData.meta_app_secret = data.meta_app_secret.trim();
+  if (data.youtube_client_id !== undefined) cleanedData.youtube_client_id = data.youtube_client_id.trim();
+  if (data.youtube_client_secret !== undefined) cleanedData.youtube_client_secret = data.youtube_client_secret.trim();
+
   const updated: SystemApiConfig = {
     ...current,
-    ...data,
+    ...cleanedData,
     updatedAt: new Date().toISOString(),
   };
 
