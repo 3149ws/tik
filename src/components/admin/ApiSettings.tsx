@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useApp } from '../../context/AppContext';
 import { getApiCredentialFromDb, saveApiCredentialToDb } from '../../services/dbService';
+import { getSystemApiConfig, saveSystemApiConfig } from '../../services/apiSettingsService';
 import {
   Key,
   CheckCircle2,
@@ -13,6 +14,8 @@ import {
   Sparkles,
   Lock,
   Globe,
+  Save,
+  AlertCircle,
 } from 'lucide-react';
 
 export const ApiSettings: React.FC = () => {
@@ -23,7 +26,7 @@ export const ApiSettings: React.FC = () => {
   const [tiktokClientKey, setTiktokClientKey] = useState('tt_app_7384918293849102');
   const [tiktokClientSecret, setTiktokClientSecret] = useState('secret_tt_93810294812390182');
   const [showTiktokSecret, setShowTiktokSecret] = useState(false);
-  const [tiktokEnv, setTiktokEnv] = useState<'sandbox' | 'live'>('live');
+  const [tiktokEnv, setTiktokEnv] = useState<'sandbox' | 'live'>('sandbox');
   const [tiktokSaved, setTiktokSaved] = useState(false);
 
   // Meta State
@@ -40,6 +43,11 @@ export const ApiSettings: React.FC = () => {
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [googleSaved, setGoogleSaved] = useState(false);
 
+  // Loading & Toast States
+  const [savingPlatform, setSavingPlatform] = useState<string | null>(null);
+  const [globalSavedToast, setGlobalSavedToast] = useState<string | null>(null);
+  const [saveErrorToast, setSaveErrorToast] = useState<string | null>(null);
+
   // Copy Toasts
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -53,19 +61,25 @@ export const ApiSettings: React.FC = () => {
   const googleRedirectUri = `${baseOrigin}/api/auth/callback/google`;
 
   useEffect(() => {
-    // Load persisted credentials from DB if available
-    getApiCredentialFromDb('tiktok').then((cred) => {
-      if (cred?.clientId) setTiktokClientKey(cred.clientId);
-      if (cred?.clientSecret) setTiktokClientSecret(cred.clientSecret);
-    });
-    getApiCredentialFromDb('meta').then((cred) => {
-      if (cred?.clientId) setMetaAppId(cred.clientId);
-      if (cred?.clientSecret) setMetaAppSecret(cred.clientSecret);
-    });
-    getApiCredentialFromDb('youtube').then((cred) => {
-      if (cred?.clientId) setGoogleClientId(cred.clientId);
-      if (cred?.clientSecret) setGoogleClientSecret(cred.clientSecret);
-    });
+    async function loadSettings() {
+      // Direct service load
+      try {
+        const cfg = await getSystemApiConfig();
+        if (cfg.tiktok_client_key) setTiktokClientKey(cfg.tiktok_client_key);
+        if (cfg.tiktok_client_secret) setTiktokClientSecret(cfg.tiktok_client_secret);
+        if (cfg.tiktok_env) setTiktokEnv(cfg.tiktok_env);
+
+        if (cfg.meta_app_id) setMetaAppId(cfg.meta_app_id);
+        if (cfg.meta_app_secret) setMetaAppSecret(cfg.meta_app_secret);
+
+        if (cfg.youtube_client_id) setGoogleClientId(cfg.youtube_client_id);
+        if (cfg.youtube_client_secret) setGoogleClientSecret(cfg.youtube_client_secret);
+      } catch (e) {
+        console.warn('Failed to load system settings', e);
+      }
+    }
+
+    loadSettings();
   }, []);
 
   const handleCopy = (text: string, key: string) => {
@@ -74,56 +88,130 @@ export const ApiSettings: React.FC = () => {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  const executePostSave = async (payload: any, platformLabel?: string) => {
+    setSavingPlatform(platformLabel || 'all');
+    setSaveErrorToast(null);
+
+    try {
+      // Direct call to saveSystemApiConfig for guaranteed persistence
+      const result = await saveSystemApiConfig(payload);
+
+      // Also send POST request to /api/admin/settings if endpoint exists
+      try {
+        await fetch('/api/admin/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (fetchErr) {
+        // Ignore fetch errors if interceptor or endpoint is not available
+      }
+
+      if (result.success) {
+        // Synchronize App Context
+        if (payload.tiktok_client_key) {
+          updateApiConfig('tiktok', {
+            appIdOrKey: payload.tiktok_client_key,
+            secret: payload.tiktok_client_secret,
+            environment: payload.tiktok_env,
+            redirectUri: tiktokRedirectUri,
+          });
+        }
+        if (payload.meta_app_id) {
+          updateApiConfig('meta', {
+            appIdOrKey: payload.meta_app_id,
+            secret: payload.meta_app_secret,
+            redirectUri: metaRedirectUri,
+          });
+        }
+        if (payload.youtube_client_id) {
+          updateApiConfig('youtube', {
+            appIdOrKey: payload.youtube_client_id,
+            secret: payload.youtube_client_secret,
+            redirectUri: googleRedirectUri,
+          });
+        }
+
+        const msg =
+          language === 'zh'
+            ? `✅ ${platformLabel ? platformLabel : '全站'} API 配置已成功持久化保存！数据已即时写入 Cloudflare / 本地存储。`
+            : `✅ ${platformLabel ? platformLabel : 'Global'} API settings saved & persisted successfully!`;
+
+        setGlobalSavedToast(msg);
+        setTimeout(() => setGlobalSavedToast(null), 4000);
+        return true;
+      } else {
+        throw new Error(result.message || 'Save failed');
+      }
+    } catch (err: any) {
+      console.error('Save settings error:', err);
+      setSaveErrorToast(
+        language === 'zh'
+          ? `保存失败: ${err.message || '保存过程出错，请重试'}`
+          : `Save failed: ${err.message || 'Error saving settings'}`
+      );
+      return false;
+    } finally {
+      setSavingPlatform(null);
+    }
+  };
+
   const handleSaveTiktok = async () => {
-    await saveApiCredentialToDb({
-      platform: 'tiktok',
-      clientId: tiktokClientKey,
-      clientSecret: tiktokClientSecret,
-      redirectUri: tiktokRedirectUri,
-      updatedAt: new Date().toISOString(),
-    });
-    updateApiConfig('tiktok', {
-      appIdOrKey: tiktokClientKey,
-      secret: tiktokClientSecret,
-      environment: tiktokEnv,
-      redirectUri: tiktokRedirectUri,
-    });
-    setTiktokSaved(true);
-    setTimeout(() => setTiktokSaved(false), 3000);
+    const ok = await executePostSave(
+      {
+        tiktok_client_key: tiktokClientKey,
+        tiktok_client_secret: tiktokClientSecret,
+        tiktok_env: tiktokEnv,
+      },
+      'TikTok'
+    );
+    if (ok) {
+      setTiktokSaved(true);
+      setTimeout(() => setTiktokSaved(false), 3000);
+    }
   };
 
   const handleSaveMeta = async () => {
-    await saveApiCredentialToDb({
-      platform: 'meta',
-      clientId: metaAppId,
-      clientSecret: metaAppSecret,
-      redirectUri: metaRedirectUri,
-      updatedAt: new Date().toISOString(),
-    });
-    updateApiConfig('meta', {
-      appIdOrKey: metaAppId,
-      secret: metaAppSecret,
-      redirectUri: metaRedirectUri,
-    });
-    setMetaSaved(true);
-    setTimeout(() => setMetaSaved(false), 3000);
+    const ok = await executePostSave(
+      {
+        meta_app_id: metaAppId,
+        meta_app_secret: metaAppSecret,
+      },
+      'Meta'
+    );
+    if (ok) {
+      setMetaSaved(true);
+      setTimeout(() => setMetaSaved(false), 3000);
+    }
   };
 
   const handleSaveGoogle = async () => {
-    await saveApiCredentialToDb({
-      platform: 'youtube',
-      clientId: googleClientId,
-      clientSecret: googleClientSecret,
-      redirectUri: googleRedirectUri,
-      updatedAt: new Date().toISOString(),
-    });
-    updateApiConfig('youtube', {
-      appIdOrKey: googleClientId,
-      secret: googleClientSecret,
-      redirectUri: googleRedirectUri,
-    });
-    setGoogleSaved(true);
-    setTimeout(() => setGoogleSaved(false), 3000);
+    const ok = await executePostSave(
+      {
+        youtube_client_id: googleClientId,
+        youtube_client_secret: googleClientSecret,
+      },
+      'Google YouTube'
+    );
+    if (ok) {
+      setGoogleSaved(true);
+      setTimeout(() => setGoogleSaved(false), 3000);
+    }
+  };
+
+  const handleSaveAll = async () => {
+    await executePostSave(
+      {
+        tiktok_client_key: tiktokClientKey,
+        tiktok_client_secret: tiktokClientSecret,
+        tiktok_env: tiktokEnv,
+        meta_app_id: metaAppId,
+        meta_app_secret: metaAppSecret,
+        youtube_client_id: googleClientId,
+        youtube_client_secret: googleClientSecret,
+      },
+      '全站集中'
+    );
   };
 
   const handleTestHandshake = async (platform: 'tiktok' | 'meta' | 'youtube') => {
@@ -141,7 +229,7 @@ export const ApiSettings: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Super Admin Notice Banner */}
-      <div className="p-4 bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl text-white shadow-md border border-indigo-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl text-white shadow-md border border-indigo-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-xl border border-indigo-400/30 flex-shrink-0">
             <Lock className="w-5 h-5" />
@@ -155,12 +243,46 @@ export const ApiSettings: React.FC = () => {
             </h2>
             <p className="text-xs text-slate-300 mt-0.5">
               {language === 'zh'
-                ? '此处填写的凭证将自动应用于全站所有普通用户的社媒一键授权流程。普通用户界面隐去任何 Key/Secret 输入项，保障全站系统安全。'
-                : 'Credentials configured here govern global OAuth for all SaaS creators. Hidden from standard users.'}
+                ? '此处填写的凭证将自动持久化写入 Cloudflare KV / Firestore，并即时应用于全站用户。普通用户端隐去敏感密钥。'
+                : 'Credentials configured here govern global OAuth for all SaaS creators. Auto persisted to DB.'}
             </p>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={handleSaveAll}
+          disabled={savingPlatform !== null}
+          className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer flex-shrink-0"
+        >
+          {savingPlatform === '全站集中' || savingPlatform === 'all' ? (
+            <>
+              <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span>{language === 'zh' ? '保存中...' : 'Saving...'}</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              <span>{language === 'zh' ? '保存全站 API 配置' : 'Save All Settings'}</span>
+            </>
+          )}
+        </button>
       </div>
+
+      {/* Toast Feedback */}
+      {globalSavedToast && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-xs animate-in fade-in">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <span>{globalSavedToast}</span>
+        </div>
+      )}
+
+      {saveErrorToast && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900 text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-xs animate-in fade-in">
+          <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+          <span>{saveErrorToast}</span>
+        </div>
+      )}
 
       {testSuccessToast && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs font-semibold flex items-center gap-2 shadow-xs animate-in fade-in">
@@ -253,7 +375,7 @@ export const ApiSettings: React.FC = () => {
                 onChange={(e) => setTiktokEnv(e.target.value as 'sandbox' | 'live')}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="sandbox">Sandbox (Testing / 仅测试模式)</option>
+                <option value="sandbox">Sandbox (Testing / 沙盒提审测试模式)</option>
                 <option value="live">Live (Production / 线上生产环境)</option>
               </select>
             </div>
@@ -287,9 +409,17 @@ export const ApiSettings: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSaveTiktok}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                disabled={savingPlatform !== null}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
               >
-                Save Settings
+                {savingPlatform === 'TikTok' ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>{language === 'zh' ? '保存中...' : 'Saving...'}</span>
+                  </>
+                ) : (
+                  <span>{language === 'zh' ? '保存配置' : 'Save Settings'}</span>
+                )}
               </button>
             </div>
           </div>
@@ -397,9 +527,17 @@ export const ApiSettings: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSaveMeta}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                disabled={savingPlatform !== null}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
               >
-                Save Settings
+                {savingPlatform === 'Meta' ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>{language === 'zh' ? '保存中...' : 'Saving...'}</span>
+                  </>
+                ) : (
+                  <span>{language === 'zh' ? '保存配置' : 'Save Settings'}</span>
+                )}
               </button>
             </div>
           </div>
@@ -507,9 +645,17 @@ export const ApiSettings: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSaveGoogle}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                disabled={savingPlatform !== null}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
               >
-                Save Settings
+                {savingPlatform === 'Google YouTube' ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>{language === 'zh' ? '保存中...' : 'Saving...'}</span>
+                  </>
+                ) : (
+                  <span>{language === 'zh' ? '保存配置' : 'Save Settings'}</span>
+                )}
               </button>
             </div>
           </div>
@@ -518,3 +664,4 @@ export const ApiSettings: React.FC = () => {
     </div>
   );
 };
+

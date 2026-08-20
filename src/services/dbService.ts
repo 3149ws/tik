@@ -178,10 +178,16 @@ export interface ApiCredential {
   clientSecret?: string;
   redirectUri?: string;
   updatedAt: string;
+  environment?: 'sandbox' | 'live';
 }
 
 export async function saveApiCredentialToDb(credential: ApiCredential): Promise<void> {
   const path = `apiCredentials/${credential.platform}`;
+  try {
+    localStorage.setItem(`api_cred_${credential.platform}`, JSON.stringify(credential));
+  } catch (e) {
+    console.warn('localStorage save failed', e);
+  }
   try {
     await setDoc(doc(db, 'apiCredentials', credential.platform), credential);
   } catch (error) {
@@ -190,12 +196,23 @@ export async function saveApiCredentialToDb(credential: ApiCredential): Promise<
 }
 
 export async function getApiCredentialFromDb(platform: string): Promise<ApiCredential | null> {
+  try {
+    const local = localStorage.getItem(`api_cred_${platform}`);
+    if (local) {
+      return JSON.parse(local);
+    }
+  } catch (e) {}
+
   const path = `apiCredentials/${platform}`;
   try {
     const docRef = doc(db, 'apiCredentials', platform);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return docSnap.data() as ApiCredential;
+      const data = docSnap.data() as ApiCredential;
+      try {
+        localStorage.setItem(`api_cred_${platform}`, JSON.stringify(data));
+      } catch (e) {}
+      return data;
     }
     return null;
   } catch (error) {
