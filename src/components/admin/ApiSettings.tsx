@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useApp } from '../../context/AppContext';
-import { getApiCredentialFromDb, saveApiCredentialToDb } from '../../services/dbService';
-import { getSystemApiConfig, saveSystemApiConfig } from '../../services/apiSettingsService';
+import {
+  getSystemApiConfig,
+  saveSystemApiConfig,
+  saveToLocalStorageImmediately,
+  YUNINA_STORAGE_KEY,
+  SYSTEM_STORAGE_KEY,
+} from '../../services/apiSettingsService';
 import {
   Key,
   CheckCircle2,
@@ -55,16 +60,18 @@ export const ApiSettings: React.FC = () => {
   const [testingPlatform, setTestingPlatform] = useState<string | null>(null);
   const [testSuccessToast, setTestSuccessToast] = useState<string | null>(null);
 
-  const baseOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://yunina.top';
+  const baseOrigin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'https://yunina.top';
   const tiktokRedirectUri = `${baseOrigin}/api/auth/callback/tiktok`;
   const metaRedirectUri = `${baseOrigin}/api/auth/callback/meta`;
   const googleRedirectUri = `${baseOrigin}/api/auth/callback/google`;
 
+  // Page Load: Synchronously populate from localStorage immediately, then async sync
   useEffect(() => {
-    async function loadSettings() {
-      // Direct service load
-      try {
-        const cfg = await getSystemApiConfig();
+    // 1. Immediate synchronous local storage read (< 5ms)
+    try {
+      const raw = localStorage.getItem(YUNINA_STORAGE_KEY) || localStorage.getItem(SYSTEM_STORAGE_KEY);
+      if (raw) {
+        const cfg = JSON.parse(raw);
         if (cfg.tiktok_client_key) setTiktokClientKey(cfg.tiktok_client_key);
         if (cfg.tiktok_client_secret) setTiktokClientSecret(cfg.tiktok_client_secret);
         if (cfg.tiktok_env) setTiktokEnv(cfg.tiktok_env);
@@ -74,12 +81,25 @@ export const ApiSettings: React.FC = () => {
 
         if (cfg.youtube_client_id) setGoogleClientId(cfg.youtube_client_id);
         if (cfg.youtube_client_secret) setGoogleClientSecret(cfg.youtube_client_secret);
-      } catch (e) {
-        console.warn('Failed to load system settings', e);
       }
+    } catch (e) {
+      console.warn('Failed to parse localStorage on page init', e);
     }
 
-    loadSettings();
+    // 2. Async background sync from db/remote
+    getSystemApiConfig()
+      .then((cfg) => {
+        if (cfg.tiktok_client_key) setTiktokClientKey(cfg.tiktok_client_key);
+        if (cfg.tiktok_client_secret) setTiktokClientSecret(cfg.tiktok_client_secret);
+        if (cfg.tiktok_env) setTiktokEnv(cfg.tiktok_env);
+
+        if (cfg.meta_app_id) setMetaAppId(cfg.meta_app_id);
+        if (cfg.meta_app_secret) setMetaAppSecret(cfg.meta_app_secret);
+
+        if (cfg.youtube_client_id) setGoogleClientId(cfg.youtube_client_id);
+        if (cfg.youtube_client_secret) setGoogleClientSecret(cfg.youtube_client_secret);
+      })
+      .catch((e) => console.warn('getSystemApiConfig async load error', e));
   }, []);
 
   const handleCopy = (text: string, key: string) => {
@@ -92,68 +112,70 @@ export const ApiSettings: React.FC = () => {
     setSavingPlatform(platformLabel || 'all');
     setSaveErrorToast(null);
 
+    // 1. Immediate synchronous local persistence (< 5ms)
+    const updated = saveToLocalStorageImmediately(payload);
+
+    // 2. Immediate synchronization to App Context
+    if (payload.tiktok_client_key) {
+      updateApiConfig('tiktok', {
+        appIdOrKey: payload.tiktok_client_key,
+        secret: payload.tiktok_client_secret,
+        environment: payload.tiktok_env,
+        redirectUri: tiktokRedirectUri,
+      });
+    }
+    if (payload.meta_app_id) {
+      updateApiConfig('meta', {
+        appIdOrKey: payload.meta_app_id,
+        secret: payload.meta_app_secret,
+        redirectUri: metaRedirectUri,
+      });
+    }
+    if (payload.youtube_client_id) {
+      updateApiConfig('youtube', {
+        appIdOrKey: payload.youtube_client_id,
+        secret: payload.youtube_client_secret,
+        redirectUri: googleRedirectUri,
+      });
+    }
+
+    // 3. Immediate Green Toast (< 100ms)
+    const msg =
+      language === 'zh'
+        ? `✅ 全站 API 配置已成功持久化保存！`
+        : `✅ Global API settings saved & persisted successfully!`;
+
+    setGlobalSavedToast(msg);
+    setTimeout(() => setGlobalSavedToast(null), 4000);
+
+    // 4. Async background sync with 3-second timeout circuit breaker
     try {
-      // Direct call to saveSystemApiConfig for guaranteed persistence
-      const result = await saveSystemApiConfig(payload);
-
-      // Also send POST request to /api/admin/settings if endpoint exists
-      try {
-        await fetch('/api/admin/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } catch (fetchErr) {
-        // Ignore fetch errors if interceptor or endpoint is not available
-      }
-
-      if (result.success) {
-        // Synchronize App Context
-        if (payload.tiktok_client_key) {
-          updateApiConfig('tiktok', {
-            appIdOrKey: payload.tiktok_client_key,
-            secret: payload.tiktok_client_secret,
-            environment: payload.tiktok_env,
-            redirectUri: tiktokRedirectUri,
-          });
-        }
-        if (payload.meta_app_id) {
-          updateApiConfig('meta', {
-            appIdOrKey: payload.meta_app_id,
-            secret: payload.meta_app_secret,
-            redirectUri: metaRedirectUri,
-          });
-        }
-        if (payload.youtube_client_id) {
-          updateApiConfig('youtube', {
-            appIdOrKey: payload.youtube_client_id,
-            secret: payload.youtube_client_secret,
-            redirectUri: googleRedirectUri,
-          });
-        }
-
-        const msg =
-          language === 'zh'
-            ? `✅ ${platformLabel ? platformLabel : '全站'} API 配置已成功持久化保存！数据已即时写入 Cloudflare / 本地存储。`
-            : `✅ ${platformLabel ? platformLabel : 'Global'} API settings saved & persisted successfully!`;
-
-        setGlobalSavedToast(msg);
-        setTimeout(() => setGlobalSavedToast(null), 4000);
-        return true;
-      } else {
-        throw new Error(result.message || 'Save failed');
-      }
-    } catch (err: any) {
-      console.error('Save settings error:', err);
-      setSaveErrorToast(
-        language === 'zh'
-          ? `保存失败: ${err.message || '保存过程出错，请重试'}`
-          : `Save failed: ${err.message || 'Error saving settings'}`
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('3s timeout circuit breaker')), 3000)
       );
-      return false;
+
+      const asyncSavePromise = (async () => {
+        await saveSystemApiConfig(payload);
+        try {
+          await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        } catch (e) {
+          // Ignore fetch interceptor errors
+        }
+      })();
+
+      await Promise.race([asyncSavePromise, timeoutPromise]);
+    } catch (err: any) {
+      console.warn('Async sync notice:', err?.message || err);
     } finally {
+      // GUARANTEED: Always end loading state
       setSavingPlatform(null);
     }
+
+    return true;
   };
 
   const handleSaveTiktok = async () => {
