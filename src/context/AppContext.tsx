@@ -109,89 +109,9 @@ const initialUsers: User[] = [
   },
 ];
 
-const initialChannels: SocialChannel[] = [
-  {
-    id: 'chn_tiktok_01',
-    platform: 'tiktok',
-    handle: '@lideming17',
-    displayName: 'Li Deming (Health & Wellness)',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-    followers: 1012,
-    status: 'active',
-    connectedAt: '2026-07-20',
-    tokenExpiresAt: '2026-11-20',
-    ipRegion: 'US-West (Silicon Valley Clean IP #402)',
-    accountType: 'creator',
-  },
-  {
-    id: 'chn_youtube_01',
-    platform: 'youtube',
-    handle: '@TCMHealthSecrets',
-    displayName: 'TCM Wellness Shorts',
-    avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
-    followers: 45800,
-    status: 'active',
-    connectedAt: '2026-07-22',
-    tokenExpiresAt: '2026-12-01',
-    ipRegion: 'US-East (Virginia Clean IP #108)',
-    accountType: 'business',
-  },
-  {
-    id: 'chn_facebook_01',
-    platform: 'facebook',
-    handle: 'The Store UK',
-    displayName: 'The Store UK (Official Page)',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-    followers: 97990,
-    status: 'active',
-    connectedAt: '2026-06-10',
-    tokenExpiresAt: '2026-10-15',
-    ipRegion: 'Frankfurt (Germany Clean IP #204)',
-    accountType: 'business',
-  },
-];
+const initialChannels: SocialChannel[] = [];
 
-const initialPosts: PostContent[] = [
-  {
-    id: 'post_01',
-    title: '身体怕冷多揉三阳',
-    caption: '身体怕冷多揉三阳 #中医 #tcm #Pain #Acupoint #健康养生',
-    hashtags: ['#中医', '#tcm', '#Pain', '#Acupoint', '#健康养生'],
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-woman-doing-yoga-outdoors-42861-large.mp4',
-    videoFileName: 'health_acupoint_3yang.mp4',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&auto=format&fit=crop&q=80',
-    videoDuration: 32,
-    fileSizeMb: 18.4,
-    targetPlatforms: ['tiktok', 'youtube'],
-    scheduledTime: '2026-08-19T11:00:00.000Z',
-    status: 'scheduled',
-    createdAt: '2026-08-18T14:20:00.000Z',
-    tiktokSettings: {
-      privacyLevel: 'PUBLIC_TO_EVERYONE',
-      allowComments: true,
-      allowDuet: true,
-      allowStitch: true,
-      isAiGenerated: false,
-      isCommercial: false,
-      brandPromotion: false,
-      yourBrand: false,
-    },
-    youtubeSettings: {
-      madeForKids: false,
-      visibility: 'public',
-      category: 'Howto & Style',
-      notifySubscribers: true,
-    },
-    facebookSettings: {
-      shareToReels: true,
-      targetAudience: 'public',
-      autoShareToFeed: true,
-    },
-    autoPublish: true,
-    useUrlShortener: false,
-    selectedChannels: ['chn_tiktok_01', 'chn_youtube_01'],
-  },
-];
+const initialPosts: PostContent[] = [];
 
 const initialApiConfigs: ApiCredentialConfig[] = [
   {
@@ -303,6 +223,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           accountType: 'creator',
         }));
         setChannels(formattedList);
+      } else {
+        setChannels([]);
       }
     });
 
@@ -350,6 +272,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           selectedChannels: [],
         }));
         setPosts(formattedPosts);
+      } else {
+        setPosts([]);
       }
     });
 

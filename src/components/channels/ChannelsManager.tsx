@@ -128,80 +128,105 @@ export const ChannelsManager: React.FC = () => {
       </div>
 
       {/* Channels Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {channels.map((ch) => (
-          <div
-            key={ch.id}
-            className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
-          >
-            <div>
-              {/* Top Row: Icon + Status */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  {getPlatformIcon(ch.platform)}
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{ch.displayName}</h3>
-                    <p className="text-xs text-indigo-600 font-semibold">{ch.handle}</p>
+      {channels.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {channels.map((ch) => (
+            <div
+              key={ch.id}
+              className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+            >
+              <div>
+                {/* Top Row: Icon + Status */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    {getPlatformIcon(ch.platform)}
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{ch.displayName}</h3>
+                      <p className="text-xs text-indigo-600 font-semibold">{ch.handle}</p>
+                    </div>
+                  </div>
+
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {t.channelsStatusActive}
+                  </span>
+                </div>
+
+                {/* Channel Stats & Node details */}
+                <div className="space-y-2.5 py-3 border-y border-slate-100 text-xs text-slate-600">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">{t.channelsFollowers}</span>
+                    <span className="font-bold text-slate-900 font-mono">
+                      {ch.followers.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">{t.channelsDispatchNode}</span>
+                    <span className="font-medium text-slate-800 text-right truncate max-w-[180px]">
+                      {ch.ipRegion}
+                    </span>
                   </div>
                 </div>
 
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  {t.channelsStatusActive}
-                </span>
-              </div>
-
-              {/* Channel Stats & Node details */}
-              <div className="space-y-2.5 py-3 border-y border-slate-100 text-xs text-slate-600">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">{t.channelsFollowers}</span>
-                  <span className="font-bold text-slate-900 font-mono">
-                    {ch.followers.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">{t.channelsDispatchNode}</span>
-                  <span className="font-medium text-slate-800 text-right truncate max-w-[180px]">
-                    {ch.ipRegion}
-                  </span>
-                </div>
-              </div>
-
-              {/* Handshake Ping Result */}
-              {testResult && testResult.id === ch.id && (
-                <div className="mt-3 p-2.5 rounded-xl bg-emerald-50 text-emerald-900 text-xs flex items-center justify-between animate-in fade-in">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Ping: {testResult.latency}ms</span>
+                {/* Handshake Ping Result */}
+                {testResult && testResult.id === ch.id && (
+                  <div className="mt-3 p-2.5 rounded-xl bg-emerald-50 text-emerald-900 text-xs flex items-center justify-between animate-in fade-in">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Ping: {testResult.latency}ms</span>
+                    </div>
+                    <span className="font-mono text-[10px] text-emerald-700 font-bold">100% Clean</span>
                   </div>
-                  <span className="font-mono text-[10px] text-emerald-700 font-bold">100% Clean</span>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <button
-                onClick={() => handleTest(ch.id)}
-                disabled={testingId === ch.id}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                {testingId === ch.id ? (
-                  <span className="inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
-                ) : (
-                  <span>{t.channelsTestConnection}</span>
                 )}
-              </button>
+              </div>
 
-              <button
-                onClick={() => removeChannel(ch.id)}
-                className="text-xs font-medium text-rose-500 hover:text-rose-700 cursor-pointer"
-              >
-                {t.channelsDisconnect}
-              </button>
+              {/* Bottom Actions */}
+              <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <button
+                  onClick={() => handleTest(ch.id)}
+                  disabled={testingId === ch.id}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  {testingId === ch.id ? (
+                    <span className="inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                  ) : (
+                    <span>{t.channelsTestConnection}</span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => removeChannel(ch.id)}
+                  className="text-xs font-medium text-rose-500 hover:text-rose-700 cursor-pointer"
+                >
+                  {t.channelsDisconnect}
+                </button>
+              </div>
             </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl p-12 border border-slate-200/90 shadow-xs text-center max-w-2xl mx-auto space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto shadow-xs">
+            <Radio className="w-8 h-8" />
           </div>
-        ))}
-      </div>
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">
+              {language === 'zh' ? '暂无连接的真实矩阵账号' : 'No Connected Social Channels'}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md mx-auto">
+              {language === 'zh'
+                ? '点击下方的按钮，通过 TikTok、YouTube Shorts 或 Facebook OAuth 官方授权绑定您的真实社媒账号。'
+                : 'Click the button below to authorize and connect your real TikTok, YouTube Shorts, or Facebook accounts via official OAuth.'}
+            </p>
+          </div>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t.channelsAddButton}</span>
+          </button>
+        </div>
+      )}
 
       {/* Add Modal */}
       <AddChannelModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />

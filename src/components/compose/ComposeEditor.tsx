@@ -283,43 +283,59 @@ export const ComposeEditor: React.FC = () => {
 
             {/* Managed Platforms */}
             <div className="space-y-2">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
-                {t.managedPlatforms}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {t.managedPlatforms} ({channels.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActivePage('channels')}
+                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                >
+                  + {language === 'zh' ? '管理账号' : 'Manage'}
+                </button>
               </div>
-              
+
               <div className="space-y-1.5">
-                <div className="flex items-center gap-3 p-2.5 bg-indigo-50/70 rounded-xl border border-indigo-100">
-                  <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] text-white font-bold">TT</span>
+                {channels.length > 0 ? (
+                  channels.map((ch) => (
+                    <div
+                      key={ch.id}
+                      onClick={() => setActivePage('channels')}
+                      className="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/70 rounded-xl border border-slate-100 hover:border-indigo-100 transition-colors cursor-pointer"
+                    >
+                      <div
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold text-[10px] ${
+                          ch.platform === 'tiktok'
+                            ? 'bg-black'
+                            : ch.platform === 'youtube'
+                            ? 'bg-red-600'
+                            : 'bg-blue-600'
+                        }`}
+                      >
+                        {ch.platform === 'tiktok' ? 'TT' : ch.platform === 'youtube' ? 'YT' : 'FB'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-800 truncate">{ch.displayName}</div>
+                        <div className="text-[10px] text-indigo-600 truncate">{ch.handle}</div>
+                      </div>
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center space-y-2">
+                    <p className="text-xs text-slate-500">
+                      {language === 'zh' ? '暂未绑定真实社交矩阵账号' : 'No real channels connected yet.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActivePage('channels')}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all cursor-pointer"
+                    >
+                      + {language === 'zh' ? '点击连接真实账号' : 'Connect Real Account'}
+                    </button>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-indigo-950 truncate">TikTok Global</div>
-                    <div className="text-[10px] text-indigo-600 truncate">@lideming17</div>
-                  </div>
-                  <div className="ml-auto w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
-                </div>
-
-                <div className="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl border border-slate-100 transition-colors cursor-pointer">
-                  <div className="w-6 h-6 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] text-white font-bold">YT</span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-700 truncate">Shorts Matrix</div>
-                    <div className="text-[10px] text-slate-400 truncate">TCM Wellness</div>
-                  </div>
-                  <div className="ml-auto w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
-                </div>
-
-                <div className="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl border border-slate-100 transition-colors cursor-pointer">
-                  <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] text-white font-bold">FB</span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-700 truncate">FB Reels Page</div>
-                    <div className="text-[10px] text-slate-400 truncate">The Store UK</div>
-                  </div>
-                  <div className="ml-auto w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
-                </div>
+                )}
               </div>
             </div>
 

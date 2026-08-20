@@ -18,6 +18,7 @@ import { ApiDocs } from './components/legal/ApiDocs';
 import { PrivacyPolicy, TermsOfService } from './components/legal/PrivacyPolicy';
 import { LoginModal } from './components/auth/LoginModal';
 import { RegisterModal } from './components/auth/RegisterModal';
+import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const { activePage, setActivePage, currentUser } = useApp();
@@ -77,7 +78,34 @@ const AppContent: React.FC = () => {
         {activePage === 'channels' && <ChannelsManager />}
         {activePage === 'analytics' && <AnalyticsDashboard />}
         {activePage === 'inbox' && <UnifiedInbox />}
-        {activePage === 'admin' && <AdminDashboard />}
+
+        {/* Admin Protection Guard */}
+        {activePage === 'admin' && (
+          currentUser?.role === 'super_admin' ? (
+            <AdminDashboard />
+          ) : (
+            <div className="max-w-xl mx-auto my-16 p-8 bg-white rounded-3xl border border-rose-200 shadow-xl text-center space-y-4">
+              <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-extrabold text-slate-900">
+                {language === 'zh' ? '403 访问受限 - 需要超级管理员权限' : '403 Access Denied - Admin Role Required'}
+              </h2>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+                {language === 'zh'
+                  ? '管理控制台 (/admin) 和全站 API 密钥配置面板仅面向超级管理员账号 (admin / 20050608ws) 开放。普通创作者账号已严格隔离。'
+                  : 'The admin dashboard (/admin) and global API credentials console are strictly reserved for Super Administrator accounts. Access restricted for creators.'}
+              </p>
+              <button
+                onClick={() => setActivePage('planning')}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>{language === 'zh' ? '返回创作工作台' : 'Back to Workspace'}</span>
+              </button>
+            </div>
+          )
+        )}
 
         {activePage === 'api-docs' && <ApiDocs />}
         {activePage === 'privacy' && <PrivacyPolicy />}

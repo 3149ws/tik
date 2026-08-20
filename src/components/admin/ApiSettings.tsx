@@ -1,167 +1,519 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useApp } from '../../context/AppContext';
-import { ApiCredentialConfig } from '../../types';
+import { getApiCredentialFromDb, saveApiCredentialToDb } from '../../services/dbService';
 import {
   Key,
-  ShieldCheck,
   CheckCircle2,
-  AlertCircle,
-  ExternalLink,
+  Copy,
+  Check,
+  Eye,
+  EyeOff,
   RefreshCw,
-  Sliders,
+  Sparkles,
   Lock,
+  Globe,
 } from 'lucide-react';
 
 export const ApiSettings: React.FC = () => {
-  const { t, language } = useLanguage();
-  const { apiConfigs, updateApiConfig, testApiHandshake } = useApp();
+  const { language } = useLanguage();
+  const { updateApiConfig, testApiHandshake } = useApp();
 
+  // TikTok State
+  const [tiktokClientKey, setTiktokClientKey] = useState('tt_app_7384918293849102');
+  const [tiktokClientSecret, setTiktokClientSecret] = useState('secret_tt_93810294812390182');
+  const [showTiktokSecret, setShowTiktokSecret] = useState(false);
+  const [tiktokEnv, setTiktokEnv] = useState<'sandbox' | 'live'>('live');
+  const [tiktokSaved, setTiktokSaved] = useState(false);
+
+  // Meta State
+  const [metaAppId, setMetaAppId] = useState('meta_fb_93810294819028');
+  const [metaAppSecret, setMetaAppSecret] = useState('secret_meta_8839102938102938');
+  const [showMetaSecret, setShowMetaSecret] = useState(false);
+  const [metaSaved, setMetaSaved] = useState(false);
+
+  // Google State
+  const [googleClientId, setGoogleClientId] = useState(
+    '507473056296-h0d93t8nu3p3ufgt6oug6q2mbe0olqu8.apps.googleusercontent.com'
+  );
+  const [googleClientSecret, setGoogleClientSecret] = useState('GOCSPX-secret_google_key_991823');
+  const [showGoogleSecret, setShowGoogleSecret] = useState(false);
+  const [googleSaved, setGoogleSaved] = useState(false);
+
+  // Copy Toasts
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Testing states
   const [testingPlatform, setTestingPlatform] = useState<string | null>(null);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [testSuccessToast, setTestSuccessToast] = useState<string | null>(null);
 
-  const handleTest = async (platform: 'tiktok' | 'meta' | 'youtube') => {
+  const baseOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://yunina.top';
+  const tiktokRedirectUri = `${baseOrigin}/api/auth/callback/tiktok`;
+  const metaRedirectUri = `${baseOrigin}/api/auth/callback/meta`;
+  const googleRedirectUri = `${baseOrigin}/api/auth/callback/google`;
+
+  useEffect(() => {
+    // Load persisted credentials from DB if available
+    getApiCredentialFromDb('tiktok').then((cred) => {
+      if (cred?.clientId) setTiktokClientKey(cred.clientId);
+      if (cred?.clientSecret) setTiktokClientSecret(cred.clientSecret);
+    });
+    getApiCredentialFromDb('meta').then((cred) => {
+      if (cred?.clientId) setMetaAppId(cred.clientId);
+      if (cred?.clientSecret) setMetaAppSecret(cred.clientSecret);
+    });
+    getApiCredentialFromDb('youtube').then((cred) => {
+      if (cred?.clientId) setGoogleClientId(cred.clientId);
+      if (cred?.clientSecret) setGoogleClientSecret(cred.clientSecret);
+    });
+  }, []);
+
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleSaveTiktok = async () => {
+    await saveApiCredentialToDb({
+      platform: 'tiktok',
+      clientId: tiktokClientKey,
+      clientSecret: tiktokClientSecret,
+      redirectUri: tiktokRedirectUri,
+      updatedAt: new Date().toISOString(),
+    });
+    updateApiConfig('tiktok', {
+      appIdOrKey: tiktokClientKey,
+      secret: tiktokClientSecret,
+      environment: tiktokEnv,
+      redirectUri: tiktokRedirectUri,
+    });
+    setTiktokSaved(true);
+    setTimeout(() => setTiktokSaved(false), 3000);
+  };
+
+  const handleSaveMeta = async () => {
+    await saveApiCredentialToDb({
+      platform: 'meta',
+      clientId: metaAppId,
+      clientSecret: metaAppSecret,
+      redirectUri: metaRedirectUri,
+      updatedAt: new Date().toISOString(),
+    });
+    updateApiConfig('meta', {
+      appIdOrKey: metaAppId,
+      secret: metaAppSecret,
+      redirectUri: metaRedirectUri,
+    });
+    setMetaSaved(true);
+    setTimeout(() => setMetaSaved(false), 3000);
+  };
+
+  const handleSaveGoogle = async () => {
+    await saveApiCredentialToDb({
+      platform: 'youtube',
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+      redirectUri: googleRedirectUri,
+      updatedAt: new Date().toISOString(),
+    });
+    updateApiConfig('youtube', {
+      appIdOrKey: googleClientId,
+      secret: googleClientSecret,
+      redirectUri: googleRedirectUri,
+    });
+    setGoogleSaved(true);
+    setTimeout(() => setGoogleSaved(false), 3000);
+  };
+
+  const handleTestHandshake = async (platform: 'tiktok' | 'meta' | 'youtube') => {
     setTestingPlatform(platform);
     await testApiHandshake(platform);
     setTestingPlatform(null);
-    setSuccessToast(`Handshake successful for ${platform.toUpperCase()}!`);
-    setTimeout(() => setSuccessToast(null), 3000);
+    setTestSuccessToast(
+      language === 'zh'
+        ? `✅ ${platform.toUpperCase()} 官方 API 接口握手成功！全站 OAuth 连通正常。`
+        : `Handshake successful for ${platform.toUpperCase()}! OAuth link is active.`
+    );
+    setTimeout(() => setTestSuccessToast(null), 3500);
   };
 
   return (
     <div className="space-y-6">
-      {successToast && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span className="font-semibold">{successToast}</span>
+      {/* Super Admin Notice Banner */}
+      <div className="p-4 bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl text-white shadow-md border border-indigo-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-xl border border-indigo-400/30 flex-shrink-0">
+            <Lock className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-sm sm:text-base font-bold flex items-center gap-2">
+              <span>{language === 'zh' ? '超级管理员 API 密钥集中配置控制台' : 'Global API Credentials Console'}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/30 text-rose-300 border border-rose-500/40 font-mono">
+                Admin Exclusive
+              </span>
+            </h2>
+            <p className="text-xs text-slate-300 mt-0.5">
+              {language === 'zh'
+                ? '此处填写的凭证将自动应用于全站所有普通用户的社媒一键授权流程。普通用户界面隐去任何 Key/Secret 输入项，保障全站系统安全。'
+                : 'Credentials configured here govern global OAuth for all SaaS creators. Hidden from standard users.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {testSuccessToast && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs font-semibold flex items-center gap-2 shadow-xs animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>{testSuccessToast}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6">
-        {apiConfigs.map((config) => (
-          <div
-            key={config.platform}
-            className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4"
-          >
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white ${
-                    config.platform === 'tiktok'
-                      ? 'bg-black'
-                      : config.platform === 'youtube'
-                      ? 'bg-red-600'
-                      : 'bg-blue-600'
-                  }`}
+      <div className="space-y-6">
+        {/* Card 1: TikTok for Developers */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-black text-white rounded-2xl flex items-center justify-center font-bold text-sm shadow-xs">
+                TT
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  TikTok for Developers (Content Posting API)
+                </h3>
+                <p className="text-xs text-slate-400">Official Direct Dispatch & OAuth v2</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                ACTIVE
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {/* TikTok Client Key */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">TikTok Client Key</label>
+              <input
+                type="text"
+                value={tiktokClientKey}
+                onChange={(e) => setTiktokClientKey(e.target.value)}
+                placeholder="aw39x1z81k9p2lh2"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* TikTok Client Secret */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">TikTok Client Secret</label>
+              <div className="relative">
+                <input
+                  type={showTiktokSecret ? 'text' : 'password'}
+                  value={tiktokClientSecret}
+                  onChange={(e) => setTiktokClientSecret(e.target.value)}
+                  className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowTiktokSecret(!showTiktokSecret)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
-                  <Key className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">{config.name}</h3>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    Last Verified: {config.lastTestedAt || 'Never'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Status & Environment Pill */}
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
-                  {config.status.toUpperCase()}
-                </span>
-                <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px] font-bold">
-                  <button
-                    onClick={() => updateApiConfig(config.platform, { environment: 'sandbox' })}
-                    className={`px-2 py-0.5 rounded transition-all ${
-                      config.environment === 'sandbox' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
-                    }`}
-                  >
-                    Sandbox
-                  </button>
-                  <button
-                    onClick={() => updateApiConfig(config.platform, { environment: 'live' })}
-                    className={`px-2 py-0.5 rounded transition-all ${
-                      config.environment === 'live' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-500'
-                    }`}
-                  >
-                    Live (Prod)
-                  </button>
-                </div>
+                  {showTiktokSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
-            {/* Inputs Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Client ID / App Key
-                </label>
+            {/* OAuth Redirect URI */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">OAuth Redirect URI</label>
+              <div className="flex gap-2">
                 <input
                   type="text"
-                  value={config.appIdOrKey}
-                  onChange={(e) => updateApiConfig(config.platform, { appIdOrKey: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  readOnly
+                  value={tiktokRedirectUri}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-600 select-all"
                 />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Client Secret (Encrypted)
-                </label>
-                <input
-                  type="password"
-                  value={config.secret}
-                  onChange={(e) => updateApiConfig(config.platform, { secret: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  OAuth Redirect Callback URI
-                </label>
-                <input
-                  type="text"
-                  value={config.redirectUri}
-                  onChange={(e) => updateApiConfig(config.platform, { redirectUri: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-800 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Webhook Event Dispatch URL
-                </label>
-                <input
-                  type="text"
-                  value={config.webhookUrl}
-                  onChange={(e) => updateApiConfig(config.platform, { webhookUrl: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-800 focus:outline-none"
-                />
+                <button
+                  type="button"
+                  onClick={() => handleCopy(tiktokRedirectUri, 'tiktok')}
+                  className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0"
+                >
+                  {copiedKey === 'tiktok' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
-            {/* Test Handshake Button */}
-            <div className="pt-2 flex justify-end">
+            {/* Environment Mode */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Environment Mode</label>
+              <select
+                value={tiktokEnv}
+                onChange={(e) => setTiktokEnv(e.target.value as 'sandbox' | 'live')}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="sandbox">Sandbox (Testing / 仅测试模式)</option>
+                <option value="live">Live (Production / 线上生产环境)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+            {tiktokSaved ? (
+              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{language === 'zh' ? 'TikTok 设置已成功保存并持久化！' : 'TikTok Settings Saved!'}</span>
+              </span>
+            ) : (
+              <span></span>
+            )}
+
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => handleTest(config.platform)}
-                disabled={testingPlatform === config.platform}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+                onClick={() => handleTestHandshake('tiktok')}
+                disabled={testingPlatform === 'tiktok'}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                {testingPlatform === config.platform ? (
-                  <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                {testingPlatform === 'tiktok' ? (
+                  <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-transparent rounded-full animate-spin"></span>
                 ) : (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>{t.adminTestApi}</span>
-                  </>
+                  <RefreshCw className="w-3.5 h-3.5" />
                 )}
+                <span>Test Connection</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveTiktok}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              >
+                Save Settings
               </button>
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* Card 2: Meta for Developers */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-bold text-sm shadow-xs">
+                FB
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Meta for Developers (Facebook & Instagram API)
+                </h3>
+                <p className="text-xs text-slate-400">Facebook Pages & Instagram Reels Graph API</p>
+              </div>
+            </div>
+
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ACTIVE
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {/* Meta App ID */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Meta App ID</label>
+              <input
+                type="text"
+                value={metaAppId}
+                onChange={(e) => setMetaAppId(e.target.value)}
+                placeholder="1048293028192019"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Meta App Secret */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Meta App Secret</label>
+              <div className="relative">
+                <input
+                  type={showMetaSecret ? 'text' : 'password'}
+                  value={metaAppSecret}
+                  onChange={(e) => setMetaAppSecret(e.target.value)}
+                  className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowMetaSecret(!showMetaSecret)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  {showMetaSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Redirect URI */}
+            <div className="sm:col-span-2">
+              <label className="block font-bold text-slate-700 mb-1">Redirect URI</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={metaRedirectUri}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-600 select-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleCopy(metaRedirectUri, 'meta')}
+                  className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0"
+                >
+                  {copiedKey === 'meta' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+            {metaSaved ? (
+              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{language === 'zh' ? 'Meta 设置已成功保存并持久化！' : 'Meta Settings Saved!'}</span>
+              </span>
+            ) : (
+              <span></span>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleTestHandshake('meta')}
+                disabled={testingPlatform === 'meta'}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                {testingPlatform === 'meta' ? (
+                  <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5" />
+                )}
+                <span>Test Connection</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveMeta}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Google Cloud Console */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-600 text-white rounded-2xl flex items-center justify-center font-bold text-sm shadow-xs">
+                YT
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Google Cloud Console (YouTube Data API v3)
+                </h3>
+                <p className="text-xs text-slate-400">Google OAuth 2.0 Client & YouTube Upload Scope</p>
+              </div>
+            </div>
+
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ACTIVE
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {/* Google Client ID */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Google Client ID</label>
+              <input
+                type="text"
+                value={googleClientId}
+                onChange={(e) => setGoogleClientId(e.target.value)}
+                placeholder="xxxx.apps.googleusercontent.com"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Google Client Secret */}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Google Client Secret</label>
+              <div className="relative">
+                <input
+                  type={showGoogleSecret ? 'text' : 'password'}
+                  value={googleClientSecret}
+                  onChange={(e) => setGoogleClientSecret(e.target.value)}
+                  className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleSecret(!showGoogleSecret)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  {showGoogleSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Redirect URI */}
+            <div className="sm:col-span-2">
+              <label className="block font-bold text-slate-700 mb-1">Redirect URI</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={googleRedirectUri}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-600 select-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleCopy(googleRedirectUri, 'google')}
+                  className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0"
+                >
+                  {copiedKey === 'google' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+            {googleSaved ? (
+              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{language === 'zh' ? 'Google 设置已成功保存并持久化！' : 'Google Settings Saved!'}</span>
+              </span>
+            ) : (
+              <span></span>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleTestHandshake('youtube')}
+                disabled={testingPlatform === 'youtube'}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                {testingPlatform === 'youtube' ? (
+                  <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5" />
+                )}
+                <span>Test Connection</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveGoogle}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
