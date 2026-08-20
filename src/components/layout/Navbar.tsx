@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useApp } from '../../context/AppContext';
+import { YuninaLogo } from '../common/YuninaLogo';
 import {
   Globe,
   Layers,
@@ -58,14 +59,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenLogin, onOpenRegister }) =
           <div className="flex items-center gap-8">
             <button
               onClick={() => setActivePage('landing')}
-              className="flex items-center gap-2.5 group text-left focus:outline-none"
+              className="flex items-center gap-2.5 group text-left focus:outline-none cursor-pointer"
             >
-              <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
-                Y
-              </div>
-              <span className="text-xl font-bold tracking-tight text-slate-800">
-                {t.brandName}
-              </span>
+              <YuninaLogo size="md" showText={true} />
             </button>
 
             {/* Public Links */}

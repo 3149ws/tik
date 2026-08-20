@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useApp } from '../../context/AppContext';
+import { YuninaLogo } from '../common/YuninaLogo';
 import {
   Layers,
   X,
@@ -119,11 +120,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
         </button>
 
         {/* Header */}
-        <div className="text-center mb-5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-rose-500 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-500/20">
-            <Layers className="w-6 h-6 text-white" />
+        <div className="text-center mb-5 flex flex-col items-center">
+          <div className="mb-3">
+            <YuninaLogo size="xl" showText={true} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t.loginTitle}</h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.loginSubtitle}</p>
         </div>
 

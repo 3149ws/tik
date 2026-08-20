@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useApp } from '../../context/AppContext';
+import { YuninaLogo } from '../common/YuninaLogo';
 import { Layers, ShieldCheck, Mail, Globe, ExternalLink, Lock, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
@@ -14,10 +15,7 @@ export const Footer: React.FC = () => {
           {/* Brand & Mission */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-rose-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-                <Layers className="w-5 h-5" />
-              </div>
-              <span className="text-xl font-bold text-white tracking-tight">{t.brandName}</span>
+              <YuninaLogo size="lg" variant="light" showText={true} />
             </div>
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
               {t.brandDescription}

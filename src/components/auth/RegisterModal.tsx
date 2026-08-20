@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useApp } from '../../context/AppContext';
+import { YuninaLogo } from '../common/YuninaLogo';
 import { Layers, X, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 
 interface RegisterModalProps {
@@ -51,11 +52,10 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, o
 
         {!submitted ? (
           <>
-            <div className="text-center mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-rose-500 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-500/20">
-                <Layers className="w-6 h-6 text-white" />
+            <div className="text-center mb-6 flex flex-col items-center">
+              <div className="mb-3">
+                <YuninaLogo size="xl" showText={true} />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t.registerTitle}</h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.registerSubtitle}</p>
             </div>
 
