@@ -1,0 +1,6 @@
+{
+  "name": "Yunina Matrix",
+  "description": "Enterprise-grade multi-platform short video matrix scheduling, asset management, and overseas IP direct dispatch SaaS for TikTok, Facebook Reels, and YouTube Shorts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

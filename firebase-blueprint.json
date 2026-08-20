@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered SaaS user account and channel quota information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin", "super_admin"] },
+        "plan": { "type": "string" },
+        "channelsQuota": { "type": "number" },
+        "channelsUsed": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "pending", "disabled"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "name", "role"]
+    },
+    "Channel": {
+      "title": "Channel",
+      "description": "Authorized TikTok, YouTube Shorts, or Facebook Reels social channel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "platform": { "type": "string", "enum": ["tiktok", "youtube", "facebook", "instagram"] },
+        "accountName": { "type": "string" },
+        "handle": { "type": "string" },
+        "avatar": { "type": "string" },
+        "followers": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "expiring", "expired"] },
+        "nodeRegion": { "type": "string" },
+        "accessToken": { "type": "string" },
+        "refreshToken": { "type": "string" },
+        "tokenExpiresAt": { "type": "string" },
+        "connectedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "platform", "accountName"]
+    },
+    "ScheduledPost": {
+      "title": "ScheduledPost",
+      "description": "Short video post scheduled across target channels",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "caption": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "videoFileName": { "type": "string" },
+        "targetPlatforms": { "type": "array" },
+        "scheduledTime": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "published", "draft", "failed"] },
+        "tiktokConfig": { "type": "object" },
+        "youtubeConfig": { "type": "object" },
+        "facebookConfig": { "type": "object" },
+        "views": { "type": "number" },
+        "likes": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "videoUrl", "targetPlatforms"]
+    },
+    "ApiCredential": {
+      "title": "ApiCredential",
+      "description": "System-wide developer API credentials for TikTok, Meta, and Google OAuth",
+      "type": "object",
+      "properties": {
+        "platform": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientSecret": { "type": "string" },
+        "redirectUri": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["platform", "clientId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User account profiles"
+    },
+    "/channels/{channelId}": {
+      "schema": { "$ref": "#/entities/Channel" },
+      "description": "Authorized matrix social media channels"
+    },
+    "/scheduledPosts/{postId}": {
+      "schema": { "$ref": "#/entities/ScheduledPost" },
+      "description": "Scheduled short video matrix posts"
+    },
+    "/apiCredentials/{platform}": {
+      "schema": { "$ref": "#/entities/ApiCredential" },
+      "description": "Developer App API key settings"
+    }
+  }
+}
